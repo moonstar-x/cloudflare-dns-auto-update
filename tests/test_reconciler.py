@@ -1,6 +1,7 @@
 import asyncio
 import json
 
+import pytest
 from conftest import api_record, config_data, envelope, record_data
 
 from cloudflare_dns_autoupdate.cloudflare import CloudflareClient
@@ -45,6 +46,43 @@ async def test_update_only_changed_fields_then_idempotent(config, respx_mock):
     assert first.updated == 1 and second.unchanged == 1
     assert json.loads(patch.calls.last.request.content) == {"content": "203.0.113.10"}
     assert patch.call_count == 1
+
+
+@pytest.mark.parametrize("source_kind", ["shell", "eval"])
+@pytest.mark.parametrize("record_type,value", [("A", "192.168.100.192"), ("AAAA", "fd00::1")])
+async def test_dynamic_private_ip_create_update_and_idempotence(
+    respx_mock, source_kind, record_type, value
+):
+    source = f"printf '%s' '{value}'" if source_kind == "shell" else repr(value)
+    public_ip = "1.1.1.1" if record_type == "A" else "2606:4700:4700::1111"
+    config = AppConfig.model_validate(
+        config_data(
+            zones=[
+                {
+                    "domain": "example.com",
+                    "dns": [record_data(type=record_type, content={source_kind: source})],
+                }
+            ]
+        )
+    )
+    desired = api_record(type=record_type, content=value)
+    listing = mock_zone(respx_mock, [])
+    creation = respx_mock.post(f"{BASE}/zones/z/dns_records").respond(200, json=envelope(desired))
+    patch = respx_mock.patch(f"{BASE}/zones/z/dns_records/record-1").respond(
+        200, json=envelope(desired)
+    )
+    async with CloudflareClient("secret") as client:
+        created = await reconcile(config, client, dry_run=False, cycle_id="create-private")
+        listing.respond(200, json=envelope([api_record(type=record_type, content=public_ip)]))
+        updated = await reconcile(config, client, dry_run=False, cycle_id="update-private")
+        listing.respond(200, json=envelope([desired]))
+        unchanged = await reconcile(config, client, dry_run=False, cycle_id="unchanged-private")
+    assert created.created == 1 and created.failed == 0
+    assert updated.updated == 1 and updated.failed == 0
+    assert unchanged.unchanged == 1 and unchanged.failed == 0
+    assert creation.call_count == patch.call_count == 1
+    assert json.loads(creation.calls.last.request.content)["content"] == value
+    assert json.loads(patch.calls.last.request.content) == {"content": value}
 
 
 async def test_ambiguous_skipped(config, respx_mock, caplog):

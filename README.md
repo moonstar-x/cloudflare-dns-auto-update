@@ -177,10 +177,11 @@ resolution, and the cache is discarded after the cycle.
 | `CNAME`, `NS`, `PTR` | Hostname with 1–63 character labels using letters, digits, `-`, or `_`; no leading/trailing `-`; total length ≤253. Lowercase with trailing dot removed. |
 | `TXT` | Nonempty text of at most 2048 characters, preserved as provided. Shell/eval results are stripped first. |
 
-Dynamic `A`/`AAAA` values must be globally routable. Private, loopback, link-local, unspecified,
-multicast, and reserved/documentation addresses are rejected. Static `ip` values may intentionally
-use private addresses. Invalid content is never sent to Cloudflare. Existing TXT content with one
-pair of surrounding double quotes compares equal to the corresponding unquoted text.
+All content sources (`ip`, `shell`, and `eval`) accept valid `A`/`AAAA` addresses, including private
+and other non-global addresses. For example, a shell or Python resolver may return `192.168.100.192`
+or `fd00::1` for an internal host. Malformed addresses and addresses of the wrong IP version are
+rejected before being sent to Cloudflare. Existing TXT content with one pair of surrounding double
+quotes compares equal to the corresponding unquoted text.
 
 ### Trusted code and security
 

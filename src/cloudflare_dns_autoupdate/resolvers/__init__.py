@@ -53,6 +53,6 @@ async def resolve_content(
     try:
         raw = await cache[key]
         logger.debug("resolver raw output via %s: %r", record.content.kind, raw)
-        return validate_content(record.type, raw, dynamic=record.content.kind != "ip")
+        return validate_content(record.type, raw)
     except ValueError as exc:
         raise ResolverError(f"invalid {record.type} content: {exc}") from exc

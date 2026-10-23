@@ -61,7 +61,19 @@ async def test_cancellation_kills_group(zone):
         assert kill.call_count == 1
 
 
-async def test_dynamic_invalid_never_accepted(zone):
-    record = RecordConfig.model_validate(record_data(content={"shell": "printf 10.0.0.1"}))
-    with pytest.raises(ResolverError, match="globally routable"):
+@pytest.mark.parametrize(
+    "record_type,value",
+    [
+        ("A", "not-an-ip"),
+        ("A", "192.168.100.999"),
+        ("A", "fd00::1"),
+        ("AAAA", "192.168.100.192"),
+        ("AAAA", "fd00::invalid"),
+    ],
+)
+async def test_dynamic_invalid_never_accepted(zone, record_type, value):
+    record = RecordConfig.model_validate(
+        record_data(type=record_type, content={"shell": f"printf '%s' '{value}'"})
+    )
+    with pytest.raises(ResolverError, match=f"invalid {record_type} content"):
         await resolve_content(record, zone)
