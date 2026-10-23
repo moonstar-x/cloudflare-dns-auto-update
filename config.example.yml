@@ -1,0 +1,47 @@
+# Omit token to use CLOUDFLARE_TOKEN from the service environment (recommended).
+# token: your-cloudflare-api-token
+
+# Seconds or whole unit combinations (minimum 10 seconds); default: 5m.
+interval: 5m
+
+zones:
+  - domain: example.com
+    dns:
+      # Dynamic IPv4: stdout is stripped and must be a public IPv4 address.
+      - name: home.example.com
+        type: A
+        content:
+          shell: curl -fsS --max-time 10 https://api.ipify.org
+        ttl: Auto
+        tags: [service:ddns, location:home]
+        comment: Managed by cloudflare-dns-autoupdate
+
+      # Static scalar content: private addresses are allowed for static A/AAAA.
+      - name: static.example.com
+        type: A
+        content:
+          ip: 203.0.113.10
+        ttl: 300
+        tags: []
+        comment: Static example
+
+      # Trusted Python code may return an expression or assign `result`.
+      # This blocking request runs in a worker thread.
+      - name: home6.example.com
+        type: AAAA
+        content:
+          eval: |
+            result = httpx.get("https://api6.ipify.org", timeout=10).text
+        ttl: Auto
+
+      # The `ip` key also accepts scalar hostname and TXT content.
+      - name: alias.example.com
+        type: CNAME
+        content:
+          ip: home.example.com.
+        ttl: 300
+
+      - name: _status.example.com
+        type: TXT
+        content:
+          ip: Managed locally
