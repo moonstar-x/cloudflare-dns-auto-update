@@ -1,3 +1,3 @@
 """An asynchronous Cloudflare DNS reconciliation service."""
 
-__version__ = "0.1.0"
+__version__ = "0.0.2"
