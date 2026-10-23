@@ -1,5 +1,7 @@
 import pytest
+from conftest import record_data
 
+from cloudflare_dns_autoupdate.config.models import RecordConfig
 from cloudflare_dns_autoupdate.resolvers import resolve_content, validate_content
 
 
@@ -43,10 +45,13 @@ def test_invalid(kind, value):
         validate_content(kind, value)
 
 
+@pytest.mark.parametrize("source_kind", ["ip", "shell", "eval"])
 @pytest.mark.parametrize(
     "kind,value",
     [
         ("A", "10.0.0.1"),
+        ("A", "172.16.0.1"),
+        ("A", "192.168.100.192"),
         ("A", "127.0.0.1"),
         ("A", "169.254.1.1"),
         ("A", "0.0.0.0"),
@@ -58,7 +63,7 @@ def test_invalid(kind, value):
         ("AAAA", "ff02::1"),
     ],
 )
-def test_private_only_static(kind, value):
-    assert validate_content(kind, value)
-    with pytest.raises(ValueError, match="globally routable"):
-        validate_content(kind, value, dynamic=True)
+async def test_non_global_addresses_from_all_sources(zone, source_kind, kind, value):
+    source = {"ip": value, "shell": f"printf '%s' '{value}'", "eval": repr(value)}[source_kind]
+    record = RecordConfig.model_validate(record_data(type=kind, content={source_kind: source}))
+    assert await resolve_content(record, zone) == value

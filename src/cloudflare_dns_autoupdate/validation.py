@@ -20,8 +20,8 @@ def normalize_hostname(value: str, *, wildcard: bool = False) -> str:
     return normalized
 
 
-def validate_content(record_type: str, value: str, *, dynamic: bool = False) -> str:
-    """Validate scalar DNS content; dynamic IP results must be globally routable."""
+def validate_content(record_type: str, value: str) -> str:
+    """Validate and normalize scalar DNS content, including non-global IP addresses."""
     match record_type.upper():
         case "A" | "AAAA":
             address = (
@@ -29,8 +29,6 @@ def validate_content(record_type: str, value: str, *, dynamic: bool = False) -> 
                 if record_type.upper() == "A"
                 else ipaddress.IPv6Address(value)
             )
-            if dynamic and (not address.is_global or address.is_multicast):
-                raise ValueError(f"{value!r} is not a globally routable IP address")
             return str(address)
         case "CNAME" | "NS" | "PTR":
             return normalize_hostname(value)

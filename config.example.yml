@@ -7,7 +7,7 @@ interval: 5m
 zones:
   - domain: example.com
     dns:
-      # Dynamic IPv4: stdout is stripped and must be a public IPv4 address.
+      # Dynamic IPv4: stdout is stripped and must be a valid IPv4 address (public or private).
       - name: home.example.com
         type: A
         content:
@@ -16,7 +16,7 @@ zones:
         tags: [service:ddns, location:home]
         comment: Managed by cloudflare-dns-autoupdate
 
-      # Static scalar content: private addresses are allowed for static A/AAAA.
+      # Static scalar content: private addresses are allowed for all A/AAAA content sources.
       - name: static.example.com
         type: A
         content:
