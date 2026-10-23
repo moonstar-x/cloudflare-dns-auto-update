@@ -21,7 +21,7 @@ LABEL org.opencontainers.image.title="cloudflare-dns-autoupdate" \
       org.opencontainers.image.licenses="GPL-3.0"
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends tini ca-certificates curl dnsutils \
+    && apt-get install -y --no-install-recommends tini ca-certificates curl dnsutils net-tools \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 10001 app \
     && useradd --uid 10001 --gid 10001 --create-home app

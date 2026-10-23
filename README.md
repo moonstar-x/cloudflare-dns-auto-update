@@ -63,9 +63,9 @@ services:
 ```
 
 Export `CLOUDFLARE_TOKEN`, then run `docker compose up -d --build`. The image runs as UID/GID 10001;
-the config directory and file must be readable by that user. It includes `/bin/sh`, `curl`, and
-`dig` for shell resolvers. `tini` forwards signals and reaps child processes. `docker stop` allows
-the current cycle up to ten seconds to finish before cancellation.
+the config directory and file must be readable by that user. It includes `/bin/sh`, `curl`, `dig`,
+and `ifconfig` for shell resolvers. `tini` forwards signals and reaps child processes. `docker stop`
+allows the current cycle up to ten seconds to finish before cancellation.
 
 To inspect one cycle in a container:
 
